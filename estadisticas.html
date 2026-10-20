@@ -4,11 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Estadisticas del Test Vocacional CHASIDE - CBTis 142.">
-    <meta name="keywords"
-        content="Estadisticas, Test Vocacional, CHASIDE, CBTis 142, Orientación Educativa, PDF, Resultados, Estudiantes">
+    <meta name="description" content="Estadisticas del Test Vocacional CHASIDE.">
+    <meta name="keywords" content="Estadisticas, Test Vocacional, CHASIDE, Orientación Educativa, PDF, Resultados, Estudiantes">
     <meta name="author" content="William Rivera Reyes">
-    <title>Dashboard de Estadísticas CHASIDE - CBTis 142</title>
+    <title>Dashboard de Estadísticas CHASIDE</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js CDN -->
@@ -26,8 +25,7 @@
             class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">Panel de Estadísticas Vocacionales CHASIDE</h1>
-                <p class="text-sm text-slate-500">Centro de Bachillerato Tecnológico Industrial y de Servicios No. 142
-                </p>
+                <p class="text-sm text-slate-500">Orientación Educativa y Recursos Socioemocionales en EMS </p>
             </div>
             <button onclick="cargarDatos()"
                 class="self-start md:self-auto bg-blue-700 hover:bg-blue-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
@@ -38,7 +36,7 @@
         <!-- Barra de Filtros -->
         <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
             <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Filtros de Análisis</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Escuela / Plantel</label>
@@ -86,6 +84,18 @@
                     </select>
                 </div>
 
+                <div>
+                    <label for="filtroTurno" class="block text-xs font-semibold text-slate-600 mb-1">
+                        Turno
+                    </label>
+                    <select id="filtroTurno" onchange="aplicarFiltros()"
+                        class="w-full p-2.5 border rounded-md text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="TODOS">Todos los Turnos</option>
+                        <option value="Matutino">Matutino</option>
+                        <option value="Vespertino">Vespertino</option>
+                    </select>
+                </div>
+
             </div>
         </section>
 
@@ -129,7 +139,7 @@
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-md font-bold text-slate-800">Listado de Alumnos Evaluados</h3>
                 <button onclick="exportarCSV()"
-                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 py-2 rounded-md transition">
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 py-2 rounded-md transition flex items-center gap-1">
                     📥 Exportar a CSV
                 </button>
             </div>
@@ -140,6 +150,7 @@
                             <th class="p-3">Folio</th>
                             <th class="p-3">Semestre</th>
                             <th class="p-3">Grupo</th>
+                            <th class="p-3">Turno</th>
                             <th class="p-3">Especialidad</th>
                             <th class="p-3">Top Interés</th>
                             <th class="p-3">Top Aptitud</th>
@@ -148,7 +159,7 @@
                     </thead>
                     <tbody id="tablaCuerpo" class="divide-y divide-slate-100">
                         <tr>
-                            <td colspan="7" class="p-4 text-center text-slate-400">Cargando datos...</td>
+                            <td colspan="8" class="p-4 text-center text-slate-400">Cargando datos...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -211,6 +222,7 @@
 
         function llenarSelect(id, opciones, textoDefecto) {
             const sel = document.getElementById(id);
+            if (!sel) return;
             const valorActual = sel.value;
             sel.innerHTML = `<option value="">${textoDefecto}</option>`;
             opciones.forEach(op => {
@@ -220,23 +232,30 @@
         }
 
         function aplicarFiltros() {
-            const esc = document.getElementById("filtroEscuela").value;
-            const sem = document.getElementById("filtroSemestre").value;
-            const gen = document.getElementById("filtroGeneracion").value;
-            const esp = document.getElementById("filtroEspecialidad").value;
-            const grp = document.getElementById("filtroGrupo").value;
+            const escuela = document.getElementById("filtroEscuela")?.value || "";
+            const semestre = document.getElementById("filtroSemestre")?.value || "";
+            const generacion = document.getElementById("filtroGeneracion")?.value || "";
+            const especialidad = document.getElementById("filtroEspecialidad")?.value || "";
+            const grupo = document.getElementById("filtroGrupo")?.value || "";
+            const turno = document.getElementById("filtroTurno")?.value || "TODOS";
 
-            const filtrados = datosGlobales.filter(d => {
-                return (!esc || d.escuela === esc) &&
-                    (!sem || d.semestre === sem) &&
-                    (!gen || d.generacion === gen) &&
-                    (!esp || d.especialidad === esp) &&
-                    (!grp || d.grupo === grp);
-            });
+            let datosFiltrados = datosGlobales;
 
-            renderizarKPIs(filtrados);
-            renderizarGraficas(filtrados);
-            renderizarTabla(filtrados);
+            if (escuela) datosFiltrados = datosFiltrados.filter(item => item.escuela === escuela);
+            if (semestre) datosFiltrados = datosFiltrados.filter(item => item.semestre === semestre);
+            if (generacion) datosFiltrados = datosFiltrados.filter(item => item.generacion === generacion);
+            if (especialidad) datosFiltrados = datosFiltrados.filter(item => item.especialidad === especialidad);
+            if (grupo) datosFiltrados = datosFiltrados.filter(item => item.grupo === grupo);
+            if (turno !== "TODOS") datosFiltrados = datosFiltrados.filter(item => item.turno === turno);
+
+            // Función unificada que actualiza KPIs, Gráficas y Tabla
+            actualizarDashboard(datosFiltrados);
+        }
+
+        function actualizarDashboard(datos) {
+            renderizarKPIs(datos);
+            renderizarGraficas(datos);
+            renderizarTabla(datos);
         }
 
         function renderizarKPIs(datos) {
@@ -259,8 +278,8 @@
             const maxI = Object.keys(conteoInteres).reduce((a, b) => conteoInteres[a] > conteoInteres[b] ? a : b);
             const maxA = Object.keys(conteoAptitud).reduce((a, b) => conteoAptitud[a] > conteoAptitud[b] ? a : b);
 
-            document.getElementById("kpiInteres").textContent = AREAS_NOMBRE[maxI];
-            document.getElementById("kpiAptitud").textContent = AREAS_NOMBRE[maxA];
+            document.getElementById("kpiInteres").textContent = AREAS_NOMBRE[maxI] || maxI;
+            document.getElementById("kpiAptitud").textContent = AREAS_NOMBRE[maxA] || maxA;
         }
 
         function renderizarGraficas(datos) {
@@ -318,34 +337,45 @@
         function renderizarTabla(datos) {
             const tbody = document.getElementById("tablaCuerpo");
             if (datos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No se encontraron registros con los filtros seleccionados.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No se encontraron registros con los filtros seleccionados.</td></tr>`;
                 return;
             }
 
-            // Renderizado de tabla anónima en estadisticas.html
-            tbody.innerHTML = datos.map(d => `
-                <tr class="hover:bg-slate-50">
+            tbody.innerHTML = datos.map(d => {
+                const fecha = d.creado_el ? new Date(d.creado_el).toLocaleDateString("es-MX") : 'N/A';
+                return `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
                     <td class="p-3 font-mono text-xs font-bold text-slate-700">${d.folio || 'S/F'}</td>
-                    <td class="p-3">${d.escuela}</td>
-                    <td class="p-3">${d.semestre}</td>
-                    <td class="p-3">${d.grupo}</td>
-                    <td class="p-3">${d.especialidad}</td>
-                    <td class="p-3 font-semibold text-blue-700">${AREAS_NOMBRE[d.top_interes] || d.top_interes}</td>
-                    <td class="p-3 font-semibold text-emerald-700">${AREAS_NOMBRE[d.top_aptitud] || d.top_aptitud}</td>
+                    <td class="p-3">${d.semestre || '-'}</td>
+                    <td class="p-3 font-semibold text-slate-800">${d.grupo || '-'}</td>
+                    <td class="p-3">${d.turno || 'N/A'}</td>
+                    <td class="p-3">${d.especialidad || '-'}</td>
+                    <td class="p-3 font-semibold text-blue-700">${AREAS_NOMBRE[d.top_interes] || d.top_interes || '-'}</td>
+                    <td class="p-3 font-semibold text-emerald-700">${AREAS_NOMBRE[d.top_aptitud] || d.top_aptitud || '-'}</td>
+                    <td class="p-3 text-xs text-slate-500">${fecha}</td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         function exportarCSV() {
             if (datosGlobales.length === 0) return;
 
-            const encabezados = ["Nombre", "Escuela", "Semestre", "Grupo", "Generacion", "Especialidad", "Top Interes", "Top Aptitud", "Fecha"];
+            const encabezados = ["Folio", "Nombre", "Escuela", "Semestre", "Grupo", "Turno", "Generacion", "Especialidad", "Top Interes", "Top Aptitud", "Fecha"];
             const filas = datosGlobales.map(d => [
-                `"${d.nombre}"`, `"${d.escuela}"`, `"${d.semestre}"`, `"${d.grupo}"`, `"${d.generacion}"`, `"${d.especialidad}"`,
-                `"${d.top_interes}"`, `"${d.top_aptitud}"`, `"${d.creado_el}"`
+                `"${d.folio || ''}"`,
+                `"${d.nombre || ''}"`,
+                `"${d.escuela || ''}"`,
+                `"${d.semestre || ''}"`,
+                `"${d.grupo || ''}"`,
+                `"${d.turno || ''}"`,
+                `"${d.generacion || ''}"`,
+                `"${d.especialidad || ''}"`,
+                `"${d.top_interes || ''}"`,
+                `"${d.top_aptitud || ''}"`,
+                `"${d.creado_el || ''}"`
             ]);
 
-            const contenidoCSV = "data:text/csv;charset=utf-8," + [encabezados.join(","), ...filas.map(e => e.join(","))].join("\n");
+            const contenidoCSV = "data:text/csv;charset=utf-8,\uFEFF" + [encabezados.join(","), ...filas.map(e => e.join(","))].join("\n");
             const encodedUri = encodeURI(contenidoCSV);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -355,12 +385,12 @@
             document.body.removeChild(link);
         }
     </script>
+
     <!-- Pie de Página Institucional -->
     <footer class="mt-12 border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500 shadow-inner">
         <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-2">
             <div>
-                <p class="font-semibold text-slate-700">Centro de Bachillerato Tecnológico Industrial y de Servicios No.
-                    142</p>
+                <p class="font-semibold text-slate-700">Test de Orientación Vocacional CHASIDE</p>
                 <p>Orientación Educativa &bull; Recursos Socioemocionales</p>
             </div>
             <div class="text-slate-600 font-medium">

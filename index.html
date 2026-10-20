@@ -4,12 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="Test Vocacional CHASIDE - CBTis 142. Realiza el test de orientación vocacional CHASIDE y obtén tus resultados en PDF.">
-    <meta name="keywords"
-        content="Test Vocacional, CHASIDE, CBTis 142, Orientación Educativa, PDF, Resultados, Estudiantes">
+    <meta name="description" content="Test Vocacional CHASIDE. Realiza el test de orientación vocacional CHASIDE y obtén tus resultados en PDF.">
+    <meta name="keywords" content="Test Vocacional, CHASIDE, Orientación Educativa, PDF, Resultados, Estudiantes">
     <meta name="author" content="Dr. William Rivera Reyes">
-    <title>Test Vocacional CHASIDE - CBTis 142</title>
+    <title>Test Vocacional CHASIDE</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- html2pdf.js CDN -->
@@ -67,6 +65,19 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Grupo *</label>
                         <input type="text" id="grupo" required placeholder="Ej. A"
                             class="w-full p-2.5 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <!-- Campo Turno -->
+                    <div>
+                        <label for="turno" class="block text-sm font-medium text-slate-700 mb-1">
+                            Turno
+                        </label>
+                        <select id="turno" name="turno" required
+                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="">-- Selecciona el Turno --</option>
+                            <option value="Matutino">Matutino</option>
+                            <option value="Vespertino">Vespertino</option>
+                        </select>
                     </div>
 
                     <div>
@@ -314,18 +325,22 @@
 
         async function procesarFormulario(e) {
             e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+
             const btn = document.getElementById("btnSubmit");
+            if (btn.disabled) return;
+
             btn.disabled = true;
             btn.textContent = "Procesando y Guardando...";
 
-            // Recopilar respuestas
+            // 1. Recopilar respuestas
             const respuestas = {};
             for (let i = 1; i <= 98; i++) {
                 const seleccion = document.querySelector(`input[name="p_${i}"]:checked`);
                 respuestas[i] = seleccion ? seleccion.value : "NO";
             }
 
-            // Conteo de puntajes
+            // 2. Conteo de puntajes
             const puntajes = {
                 intereses: { C: 0, H: 0, A: 0, S: 0, I: 0, D: 0, E: 0 },
                 aptitudes: { C: 0, H: 0, A: 0, S: 0, I: 0, D: 0, E: 0 }
@@ -349,21 +364,23 @@
 
             const estudiante = {
                 folioEstudiante: folioGenerado,
-                nombre: document.getElementById("nombre").value.toUpperCase(),
-                escuela: document.getElementById("escuela").value,
+                nombre: document.getElementById("nombre").value.trim(), // Solo se usa localmente para el PDF de la constancia
+                escuela: document.getElementById("escuela").value.trim(),
                 semestre: document.getElementById("semestre").value,
-                grupo: document.getElementById("grupo").value.toUpperCase(),
-                generacion: document.getElementById("generacion").value,
-                especialidad: document.getElementById("especialidad").value.toUpperCase()
+                grupo: document.getElementById("grupo").value.trim(),
+                especialidad: document.getElementById("especialidad").value.trim(),
+                generacion: document.getElementById("generacion").value.trim(),
+                turno: document.getElementById("turno").value
             };
 
-            // Guardar registro en Supabase
+            // 3. Guardar registro ANÓNIMO en Supabase (sin la columna 'nombre')
             try {
-                await supabaseClient.from('respuestas_chaside').insert([{
+                const { error } = await supabaseClient.from('respuestas_chaside').insert([{
                     folio: estudiante.folioEstudiante,
                     escuela: estudiante.escuela,
                     semestre: estudiante.semestre,
                     grupo: estudiante.grupo,
+                    turno: estudiante.turno,
                     generacion: estudiante.generacion,
                     especialidad: estudiante.especialidad,
                     interes_c: puntajes.intereses.C,
@@ -383,16 +400,23 @@
                     top_interes: maxInteres,
                     top_aptitud: maxAptitud
                 }]);
+
+                if (error) {
+                    console.error("Error devuelto por Supabase:", error);
+                    alert("Atención al guardar en la base de datos: " + error.message);
+                } else {
+                    console.log("¡Registro anónimo guardado exitosamente en Supabase!");
+                }
             } catch (err) {
-                console.error("Error al guardar en Supabase:", err);
+                console.error("Error de conexión:", err);
             }
 
-            // En lugar de descargar el PDF directo, mostramos el resultado en pantalla con su botón
+            // 4. Mostrar constancia personalizada en pantalla (aquí sí lleva el nombre para la impresión del alumno)
             mostrarResultadosEnPantalla(estudiante, puntajes, maxInteres, maxAptitud, estudiante.folioEstudiante);
 
             btn.disabled = false;
+            btn.textContent = "Obtener Resultados";
         }
-
         let datosEstudianteActual = null;
 
         function mostrarResultadosEnPantalla(estudiante, puntajes, maxInteres, maxAptitud, folioEstudiante) {
@@ -424,7 +448,12 @@
               <p style="margin: 3px 0;"><strong>FOLIO:</strong> ${folioFinal}</p>
               <p style="margin: 3px 0;"><strong>NOMBRE:</strong> ${estudiante.nombre}</p>
               <p style="margin: 3px 0;"><strong>ESCUELA:</strong> ${estudiante.escuela}</p>
-              <p style="margin: 3px 0;"><strong>SEMESTRE:</strong> ${estudiante.semestre} &nbsp;|&nbsp; <strong>GRUPO:</strong> "${estudiante.grupo}" &nbsp;|&nbsp; <strong>ESPECIALIDAD:</strong> ${estudiante.especialidad}</p>
+              <p style="margin: 3px 0;">
+                <strong>SEMESTRE:</strong> ${estudiante.semestre} &nbsp;|&nbsp; 
+                <strong>GRUPO:</strong> "${estudiante.grupo}" &nbsp;|&nbsp; 
+                <strong>TURNO:</strong> ${estudiante.turno} &nbsp;|&nbsp; 
+                <strong>ESPECIALIDAD:</strong> ${estudiante.especialidad}
+              </p>
               <p style="margin: 3px 0;"><strong>GENERACIÓN:</strong> ${estudiante.generacion}</p>
             </div>
 
@@ -447,26 +476,31 @@
             </div>
         </div>
 
-        <!-- Botón de Impresión/Guardado -->
-        <div class="text-center mt-6">
-            <button onclick="descargarPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-200 text-base inline-flex items-center gap-2">
-                🖨️ Guardar o Imprimir en PDF
-            </button>
-        </div>
-    `;
+            <!-- Botón de Impresión/Guardado (Con type="button" para NO reenviar el formulario) -->
+            <div class="text-center mt-6">
+                <button type="button" onclick="descargarPDF(event)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-200 text-base inline-flex items-center gap-2">
+                    🖨️ Guardar o Imprimir en PDF
+                </button>
+            </div>
+                `;
 
             const form = document.getElementById("chasideForm");
             form.appendChild(contenedor);
             contenedor.scrollIntoView({ behavior: "smooth" });
         }
 
-        function descargarPDF() {
-            const contenidoHoja = document.getElementById("hojaImpresionPDF").outerHTML;
+function descargarPDF(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
 
-            // Crear una ventana limpia sin estilos extra de la pagina principal
-            const ventanaImpresion = window.open('', '', 'height=700,width=850');
+    const contenidoHoja = document.getElementById("hojaImpresionPDF").outerHTML;
 
-            ventanaImpresion.document.write(`
+    // Crear una ventana limpia para la impresión
+    const ventanaImpresion = window.open('', '', 'height=700,width=850');
+
+    ventanaImpresion.document.write(`
         <!DOCTYPE html>
         <html lang="es">
         <head>
@@ -500,22 +534,20 @@
         </html>
     `);
 
-            ventanaImpresion.document.close();
-            ventanaImpresion.focus();
+    ventanaImpresion.document.close();
+    ventanaImpresion.focus();
 
-            // Ejecutar impresión tras cargar el DOM de la ventana emergente
-            setTimeout(() => {
-                ventanaImpresion.print();
-                ventanaImpresion.close();
-            }, 250);
-        }
+    setTimeout(() => {
+        ventanaImpresion.print();
+        ventanaImpresion.close();
+    }, 250);
+}
     </script>
 
     <footer class="mt-12 border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500 shadow-inner">
         <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-2">
             <div>
-                <p class="font-semibold text-slate-700">Centro de Bachillerato Tecnológico Industrial y de Servicios No.
-                    142</p>
+                <p class="font-semibold text-slate-700">Test de Orientación Vocacional CHASIDE</p>
                 <p>Orientación Educativa &bull; Recursos Socioemocionales</p>
             </div>
             <div class="text-slate-600 font-medium">
