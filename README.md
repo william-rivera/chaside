@@ -1,0 +1,5 @@
+Hice este sencillo TEST CHASIDE con la intención de ayudar a que mis estudiantes elijan de manera informada la carrera o actividad que desarrollarán cuando terminen su bachillerato. 
+En el plantel donde trabajo continúan aplicando el test chaside usando hojas impresas y con preguntas obsoletas, por eso decidí hacer esta versión digital que sea más práctica que un montón de fotocopias que posteriormente deberán revisar de manera individual y al final poder dar un resultado a los estudiantes. Este proceso llevaba días o semanas.
+He actualizado las preguntas para que se acerquen al contexto de mis estudiantes. Usando lenguaje facil de entender y temas actuales en comparación con el chaside clásico.
+No guardo datos personales, el nombre del estudiante solo se usa para generar la constancia pero no se almacena en la base de datos, en su lugar, se genera un folio aleatorio y se guarda con los demás datos con fines estadisticos que pudieran servir a la escuelas para considerar planes de estudio o apoyos a los estudiantes en su elección de carrera.
+Seguramente tendré que hacer mejoras con forme se vaya utilizando, acepto sugerencias, correcciones y ayuda.
