@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Test Vocacional CHASIDE - CBTis 142. Realiza el test de orientación vocacional CHASIDE y obtén tus resultados en PDF.">
+    <meta name="keywords"
+        content="Test Vocacional, CHASIDE, CBTis 142, Orientación Educativa, PDF, Resultados, Estudiantes">
+    <meta name="author" content="Dr. William Rivera Reyes">
+    <title>Test Vocacional CHASIDE - CBTis 142</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6 md:p-10 border border-slate-200">
+
+        <!-- Encabezado Institucional -->
+        <header class="text-center border-b pb-6 mb-8">
+            <h1 class="text-xl md:text-2xl font-bold text-slate-900 uppercase">Test de Orientación Vocacional CHASIDE
+            </h1>
+            <h2 class="text-lg font-semibold text-slate-700 mt-1">Orientación Educativa y Recursos Socioemocionales</h2>
+            <h3 class="text-md font-medium text-blue-700 mt-1"> Educación Media Superior</h3>
+        </header>
+
+        <form id="chasideForm" onsubmit="procesarFormulario(event)">
+
+            <!-- Sección 1: Datos del Estudiante -->
+            <section class="mb-8 bg-slate-50 p-6 rounded-lg border border-slate-200">
+                <h4 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">1. Datos del Estudiante</h4>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nombre completo *</label>
+                        <input type="text" id="nombre" required placeholder="Ej. Ramos Cortés Ximena"
+                            class="w-full p-2.5 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Escuela *</label>
+                        <input type="text" id="escuela" required value="CBTis No. 142"
+                            class="w-full p-2.5 border rounded-md bg-slate-100 text-slate-600">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Semestre *</label>
+                        <select id="semestre" required
+                            class="w-full p-2.5 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="">Selecciona semestre</option>
+                            <option value="1er Semestre">1er Semestre</option>
+                            <option value="2do Semestre">2do Semestre</option>
+                            <option value="3er Semestre">3er Semestre</option>
+                            <option value="4to Semestre">4to Semestre</option>
+                            <option value="5to Semestre">5to Semestre</option>
+                            <option value="6to Semestre">6to Semestre</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Grupo *</label>
+                        <input type="text" id="grupo" required placeholder="Ej. A"
+                            class="w-full p-2.5 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Generación *</label>
+                        <input type="text" id="generacion" required placeholder="Ej. 2024-2027"
+                            class="w-full p-2.5 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Carrera técnica / Especialidad
+                            *</label>
+                        <input type="text" id="especialidad" required
+                            placeholder="Ej. Contabilidad, Programación, Construcción..."
+                            class="w-full p-2.5 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección 2: Cuestionario -->
+            <section class="mb-8">
+                <h4 class="text-lg font-bold text-slate-800 mb-2 border-b pb-2">2. Cuestionario de Preguntas</h4>
+                <p class="text-sm text-slate-600 mb-6">Lee detenidamente cada afirmación y responde <strong>SÍ</strong>
+                    o <strong>NO</strong> según tu preferencia personal.</p>
+
+                <div id="preguntasContainer" class="space-y-4"></div>
+            </section>
+
+            <!-- Botón de Envío -->
+            <div class="text-center pt-4">
+                <button type="submit" id="btnSubmit"
+                    class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-200 text-lg">
+                    Obtener Resultados
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN DE SUPABASE ---
+        const SUPABASE_URL = "https://kefnpgzmbtgkdtxqospv.supabase.co";
+        const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_MEh236Nl0nRcrO9bFDT5ug_gx3t4dlv";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        // Preguntas oficiales del Test CHASIDE
+        const PREGUNTAS_CHASIDE = [
+            "¿Le interesaría gestionar el presupuesto, ventas o finanzas de un emprendimiento o empresa?",
+            "¿Se ofrecería para planear y coordinar la logística de un viaje, evento o fiesta con sus amigos/as?",
+            "¿Le gustaría dirigir un proyecto de construcción, diseño urbano o infraestructura en su ciudad?",
+            "¿Ante una frustración o contratiempo siempre mantiene una actitud positiva y resiliente?",
+            "¿Se dedicaría a brindar auxilio a personas accidentadas o en situaciones de peligro extremo?",
+            "¿Cuándo era niño/a, le interesaba saber cómo funcionaban por dentro sus juguetes u objetos?",
+            "¿Le interesan más los fenómenos y misterios de la naturaleza que las innovaciones tecnológicas?",
+            "¿Escucha con empatía y atención los problemas planteados por sus compañeros/as o amigos/as?",
+            "¿Se ofrecería con gusto para explicar o tutorar a alguien en un tema que usted domina?",
+            "¿Es exigente, detallista y crítico con la calidad de sus propios trabajos?",
+            "¿Le atrae armar construcciones tipo Lego, rompecabezas o proyectos de ensamblaje?",
+            "¿Entiende o le llama la atención cómo funcionan la oferta, la demanda, la inflación y los mercados financieros?",
+            "¿Formar parte de una institución con estructura, disciplina y uniforme oficial le generaría orgullo y pertenencia?",
+            "¿Participaría en disciplinas deportivas extremas o profesiones de alto riesgo y descarga de adrenalina?",
+            "¿Organiza su dinero de manera responsable para que siempre le alcance sus compromisos?",
+            "¿Convence fácilmente a otras personas sobre sus puntos de vista e ideas?",
+            "¿Le interesa conocer cómo funcionan las inteligencias artificiales, los algoritmos o las tecnologías emergentes?",
+            "¿Ante una situación de emergencia imprevista, actúa con rapidez y cabeza fría?",
+            "¿Cuándo tiene que resolver un problema lógico o matemático, es perseverante hasta encontrar la respuesta?",
+            "¿Aceptaría ser invitado/a para planificar, organizar y/o dirigir eventos deportivos o recreativos?",
+            "¿Es usted quien suele poner un toque de entusiasmo, energía e integración en las reuniones?",
+            "¿Cree que el análisis minucioso de los detalles es tan importante como la visión general del proyecto?",
+            "¿Se sentiría a gusto trabajando en un hospital, clínica o centro de salud?",
+            "¿Le gustaría participar activamente en el mantenimiento del orden ante grandes contingencias o catástrofes?",
+            "¿Pasaría varias horas concentrado/a leyendo un libro, artículo o investigación de su interés?",
+            "¿Planifica cuidadosamente las etapas de sus proyectos académicos o personales antes de iniciarlos?",
+            "¿Le apasiona explorar el funcionamiento de dispositivos digitales, software o aplicaciones?",
+            "¿Disfrutaría creando esculturas, modelado 3D, artesanías o proyectos de diseño con sus manos?",
+            "¿Muestra empatía y ayuda de forma espontánea a personas que tienen alguna discapacidad o limitación física?",
+            "¿Considera fundamental que desde la educación básica se fomente el pensamiento crítico y la participación?",
+            "¿Está de acuerdo con que la equidad de género deba aplicarse por igual en instituciones de seguridad y defensa?",
+            "¿Le gustaría investigar mediante tecnologías de laboratorio y biotecnología para encontrar la cura de enfermedades?",
+            "¿Participaría con entusiasmo en una campaña de prevención de la salud o bienestar comunitario?",
+            "¿Le interesan los temas relacionados con la historia, el origen de las culturas y la evolución humana?",
+            "¿Participaría en un equipo para analizar la dinámica de un conflicto social y proponer soluciones mediadas?",
+            "¿Dedica varias horas a la semana a la práctica de actividad física o deporte?",
+            "¿Le atraen las actividades que exigen acción continua y reacciones rápidas en situaciones de riesgo?",
+            "¿Se ofrecería como voluntario/a o colaborador/a en proyectos de exploración espacial o ciencia avanzada?",
+            "¿Disfruta más el trabajo práctico y manual que las tareas puramente teóricas?",
+            "¿Estaría dispuesto/a a sacrificar un momento de descanso para prestar auxilio como profesional?",
+            "¿Participaría en una investigación sobre las causas de la violencia social y la delincuencia?",
+            "¿Le gustaría desempeñarse en un laboratorio de análisis científico o biomédico?",
+            "¿Estaría dispuesto/a a arriesgar su integridad física para salvar la vida de un desconocido?",
+            "¿Le agradaría capacitarse en un curso intensivo de primeros auxilios y gestión de emergencias?",
+            "¿Toleraría reiniciar un proceso o experimento las veces que sea necesario hasta lograr el resultado deseado?",
+            "¿Organiza su agenda de forma eficiente para cumplir con los plazos de sus actividades?",
+            "¿Haría un curso de diseño técnico, impresión 3D o fabricación digital para crear piezas y prototipos?",
+            "¿Elegiría una profesión que requiera disponibilidad para viajar constantemente o residir temporalmente fuera?",
+            "¿Le resultaría atractivo trabajar y vivir en entornos rurales vinculados al campo, la naturaleza o el sector agropecuario?",
+            "¿Cuándo trabaja en equipo, le entusiasma liderar la lluvia de ideas y proponer nuevas rutas?",
+            "¿Le resulta natural y sencillo asumir la coordinación de un grupo de trabajo?",
+            "¿Le resultan fascinantes temas de biología, genética o ciencias de la vida?",
+            "¿Le gustaría desempeñarse como Director/a Comercial o de Marketing en una empresa?",
+            "¿Se sumaría a un proyecto para desarrollar la principal industria o fuente económica de su región?",
+            "¿Siente curiosidad por investigar el origen de fenómenos naturales o científicos, aun cuando no tengan aplicación inmediata?",
+            "¿Ha encontrado autores, pensadores o creadores con los que comparta profundamente su visión del mundo?",
+            "¿Le gustaría aprender a tocar un instrumento musical o dominar la producción de audio?",
+            "¿Aceptaría colaborar activamente con el fomento del respeto y la convivencia pacífica en espacios públicos?",
+            "¿Confía en el valor de sus ideas y persevera hasta llevarlas a la práctica?",
+            "¿Cuando un equipo electrónico o sistema presenta una falla, busca la manera de diagnosticarlo y resolverlo?",
+            "¿Formaría parte de un equipo enfocado en la conservación ambiental, la flora y la fauna salvaje?",
+            "¿Le agrada mantenerse actualizado/a sobre los últimos avances científicos en la medicina y la salud?",
+            "¿Le parece prioritario proteger y difundir la identidad y las raíces culturales de nuestro país?",
+            "¿Le gustaría realizar investigaciones para proponer modelos económicos más equitativos?",
+            "¿Le gustaría realizar tareas de mantenimiento, diagnóstico y conservación de grandes maquinarias, vehículos o infraestructura?",
+            "¿Considera que el país debe invertir fuertemente en tecnología de defensa y ciberseguridad para garantizar su soberanía?",
+            "¿Considera que la defensa de la libertad y la justicia son pilares innegociables en la sociedad?",
+            "¿Aceptaría trabajar en la industria alimentaria supervisando la calidad y seguridad de los productos?",
+            "¿Opina que la salud pública debe ser un derecho gratuito, accesible y de alta calidad para toda la población?",
+            "¿Le gustaría realizar investigaciones de laboratorio para desarrollar tratamientos médicos o biotecnológicos?",
+            "¿Le agrada asumir la responsabilidad de coordinar metas y roles dentro de un equipo?",
+            "¿Suele intervenir como mediador/a imparcial cuando surge una discusión entre amigos/as?",
+            "¿Está de acuerdo con la consolidación de cuerpos de seguridad con formación profesional de alto nivel?",
+            "¿Lucharía firme y éticamente por una causa justa sin rendirse a mitad del camino?",
+            "¿Le gustaría investigar nuevas tecnologías aplicadas a la producción de alimentos y cultivos sustentables?",
+            "¿Crearía un diseño totalmente renovado o reutilizaría materiales para armar un outfit creativo?",
+            "¿Visitaría un observatorio astronómico o centro de investigación espacial en pleno funcionamiento?",
+            "¿Le gustaría dirigir las operaciones de comercio internacional, importación y exportación de una empresa?",
+            "¿Suele sentirse cohibido/a o tímido/a al ingresar a un grupo nuevo de personas?",
+            "¿Le agradaría orientar, educar o trabajar en actividades con niños/as?",
+            "¿Crearía el contenido visual o diseño gráfico para una campaña en redes sociales sobre un tema social importante?",
+            "¿Dirigiría un grupo de artes escénicas, teatro o producción audiovisual?",
+            "¿Postularía a una vacante para dirigir la gestión de operaciones o producción en una industria moderna?",
+            "¿Se sumaría activamente a un colectivo o red de apoyo para promover causas humanitarias?",
+            "¿Estaría dispuesto/a a trabajar a medio tiempo para financiar sus propios gastos o estudios?",
+            "¿Suele comprometerse y defender posturas complejas que otros dan por perdidas?",
+            "¿Ante una situación de desastre o contingencia, se inscribiría inmediatamente como voluntario/a?",
+            "¿Comprende la función básica del ADN y la genética en los seres vivos y la biología moderna?",
+            "¿Elegiría una formación profesional que le permita dominar uno o más idiomas extranjeros?",
+            "¿Le resulta más satisfactorio trabajar concentrado/a con datos, objetos o herramientas que interactuar con personas?",
+            "¿Le gustaría ser el consultor o asesor contable y fiscal de empresas o emprendedores?",
+            "¿Ante una solicitud de apoyo solidario, ofrecería su tiempo para acompañar o cuidar a alguien de la tercera edad o enfermo?",
+            "¿Se siente atraído/a por explorar las fronteras científicas del universo y la física?",
+            "¿Considera que su rendimiento es más ágil y efectivo trabajando de forma independiente que en equipo?",
+            "¿Dedicaría parte de su tiempo libre a colaborar en brigadas o proyectos sociales en comunidades vulnerables?",
+            "¿Al diseñar o decorar un espacio, considera cuidadosamente la armonía de colores, la iluminación y la estética?",
+            "¿Le gustaría liderar la ingeniería y desarrollo de grandes proyectos de energía limpia o infraestructura pública?",
+            "¿Identifica qué es el Producto Interno Bruto (PIB) o los indicadores principales que miden la economía de un país?"
+        ];
+
+        // Matriz de equivalencias CHASIDE
+        const MATRIZ_CHASIDE = {
+            intereses: {
+                C: [98, 12, 64, 53, 85, 1, 78, 20, 71, 91],
+                H: [9, 34, 80, 25, 95, 67, 41, 74, 56, 89],
+                A: [21, 45, 96, 57, 28, 11, 50, 3, 81, 36],
+                S: [33, 92, 70, 8, 87, 62, 23, 44, 16, 52],
+                I: [75, 6, 19, 38, 60, 27, 83, 54, 47, 97],
+                D: [84, 31, 48, 73, 5, 65, 14, 37, 58, 24],
+                E: [77, 42, 88, 17, 93, 32, 68, 49, 35, 61]
+            },
+            aptitudes: {
+                C: [15, 51, 2, 46],
+                H: [63, 30, 72, 86],
+                A: [22, 39, 76, 82],
+                S: [69, 40, 29, 4],
+                I: [26, 59, 90, 10],
+                D: [13, 66, 18, 43],
+                E: [94, 7, 79, 55]
+            }
+        };
+
+        const DESCRIPCIONES = {
+            C: {
+                area: "Administrativa y Contables",
+                descripcion: "Se destaca en la organización, planificación estratégica, liderazgo de equipos y gestión de recursos. Posee inclinación por el análisis financiero, el comercio, los negocios digitales y la optimización de procesos en empresas u organizaciones.",
+                aptitudes: "Organización impecable, capacidad de negociación, visión estratégica, liderazgo de proyectos, manejo eficiente del tiempo y facilidad para interpretar datos financieros y de mercado.",
+                carreras: "Administración de Empresas, Contaduría Pública, Marketing Digital, Comercio Internacional, Finanzas, Gestión de Negocios Digitales, Logística y Cadena de Suministro, Recursos Humanos, Emprendimiento e Innovación."
+            },
+            H: {
+                area: "Humanísticas y Sociales",
+                descripcion: "Muestra un profundo interés por el comportamiento humano, la cultura, la educación, la historia y la justicia social. Posee empatía para comprender problemáticas colectivas y disposición para comunicar, orientar o defender causas comunitarias.",
+                aptitudes: "Pensamiento crítico, empatía, fluidez verbal y escrita, capacidad de escucha activa, mediación de conflictos, investigación social y comprensión lectora avanzada.",
+                carreras: "Derecho, Psicología, Pedagogía, Ciencias Políticas, Sociología, Comunicación y Periodismo Digital, Relaciones Internacionales, Trabajo Social, Filosofía, Historia, Criminología."
+            },
+            A: {
+                area: "Artísticas, Diseño y Comunicación",
+                descripcion: "Demuestra una alta sensibilidad estética, imaginación y necesidad de expresión creativa. Se orienta hacia la producción visual, musical, audiovisual, el diseño conceptual o la innovación estética en entornos físicos y digitales.",
+                aptitudes: "Creatividad e innovación, pensamiento lateral, sentido de la estética y la composición, expresión corporal o gráfica, diseño conceptual y capacidad de plasmar ideas en proyectos visuales o auditivos.",
+                carreras: "Diseño Gráfico Digital, Arquitectura, Diseño Industrial, Producción Audiovisual y Cine, Animación Digital y Videojuegos, Artes Plásticas, Música y Producción Sonora, Diseño de Modas, Publicidad Creativa."
+            },
+            S: {
+                area: "Medicina y Ciencias de la Salud",
+                descripcion: "Tiene vocación por el cuidado de la vida, el bienestar humano o animal, la prevención de enfermedades y el estudio de los sistemas biológicos. Le motiva la investigación científica aplicada a la salud y el servicio a los demás.",
+                aptitudes: "Empatía y vocación de servicio, temple ante situaciones críticas, capacidad de observación y diagnóstico, destreza manual fina, rigor científico y resistencia al trabajo bajo presión.",
+                carreras: "Medicina General, Cirujano Dentista, Enfermería, Nutrición y Dietética, Psicología Clínica, Biotecnología Médica, Fisioterapia y Rehabilitación, Medicina Veterinaria, Farmacia y Bioquímica, Optometría."
+            },
+            I: {
+                area: "Ingeniería, Tecnología y Ciencias Exactas",
+                descripcion: "Siente fascinación por la tecnología, la lógica matemática, la programación, el análisis de datos y la resolución de problemas técnicos complejos. Se orienta hacia la creación, desarrollo y optimización de sistemas, infraestructura o software.",
+                aptitudes: "Razonamiento lógico-matemático, capacidad de abstracción, resolución analítica de problemas, diagnóstico de fallas, visión espacial y adaptabilidad a nuevas herramientas tecnológicas.",
+                carreras: "Ingeniería en Desarrollo de Software / Sistemas, Inteligencia Artificial y Ciencia de Datos, Ciberseguridad, Ingeniería Industrial, Ingeniería Mecatrónica / Robótica, Ingeniería Civil, Ingeniería Química, Nanotecnología, Biónica."
+            },
+            D: {
+                area: "Defensa, Seguridad y Gestión de Riesgos",
+                descripcion: "Muestra vocación por la protección ciudadana, el mantenimiento de la disciplina, el cumplimiento de normas y la acción estratégica en situaciones de riesgo o emergencia. Valora la lealtad, el trabajo en equipo organizado y la justicia.",
+                aptitudes: "Liderazgo en situaciones de crisis, toma rápida de decisiones, autocontrol y temple, condición física, acatamiento de normas éticas y capacidad de planificación estratégica de seguridad.",
+                carreras: "Seguridad Pública y Criminología, Ciencias Militares y Navales, Protección Civil y Gestión de Riesgos, Piloto Aviador, Criminalística y Peritaje, Ciberdefensa, Gestión de Emergencias, Administración Policial."
+            },
+            E: {
+                area: "Ciencias Agrarias, Biología y Medio Ambiente",
+                descripcion: "Se apasiona por la preservación de la naturaleza, los ecosistemas, la fauna, la flora y la producción sustentable. Le interesa aplicar tecnología y ciencia para proteger los recursos naturales y optimizar el desarrollo agropecuario.",
+                aptitudes: "Observación de la naturaleza, conciencia ecológica y sustentable, adaptabilidad al trabajo en campo, rigor científico de laboratorio y visión de conservación ambiental.",
+                carreras: "Ingeniería Ambiental, Biología y Ecología, Ingeniería Agrónoma, Biotecnología Vegetal, Zootecnia, Gestión de Recursos Naturales, Energías Renovables, Oceanografía, Geología."
+            }
+        };
+
+        // Función global para generar folios anónimos
+        function generarFolio() {
+            const año = new Date().getFullYear();
+            const aleatorio = Math.random().toString(36).substring(2, 7).toUpperCase();
+            return `CHS-${año}-${aleatorio}`;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const container = document.getElementById("preguntasContainer");
+            PREGUNTAS_CHASIDE.forEach((pregunta, index) => {
+                const num = index + 1;
+                const div = document.createElement("div");
+                div.className = "p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3";
+                div.innerHTML = `
+                  <div class="text-sm md:text-base text-slate-800 font-medium">
+                    <span class="font-bold text-blue-700 mr-1">${num}.</span> ${pregunta}
+                  </div>
+                  <div class="flex items-center gap-6 shrink-0">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="p_${num}" value="SI" required class="w-4 h-4 text-blue-600">
+                      <span class="text-sm font-semibold text-slate-700">SÍ</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="p_${num}" value="NO" class="w-4 h-4 text-slate-400">
+                      <span class="text-sm font-semibold text-slate-700">NO</span>
+                    </label>
+                  </div>
+                `;
+                container.appendChild(div);
+            });
+        });
+
+        async function procesarFormulario(e) {
+            e.preventDefault();
+            const btn = document.getElementById("btnSubmit");
+            btn.disabled = true;
+            btn.textContent = "Procesando y Guardando...";
+
+            // Recopilar respuestas
+            const respuestas = {};
+            for (let i = 1; i <= 98; i++) {
+                const seleccion = document.querySelector(`input[name="p_${i}"]:checked`);
+                respuestas[i] = seleccion ? seleccion.value : "NO";
+            }
+
+            // Conteo de puntajes
+            const puntajes = {
+                intereses: { C: 0, H: 0, A: 0, S: 0, I: 0, D: 0, E: 0 },
+                aptitudes: { C: 0, H: 0, A: 0, S: 0, I: 0, D: 0, E: 0 }
+            };
+
+            for (let cat in MATRIZ_CHASIDE) {
+                for (let rubro in MATRIZ_CHASIDE[cat]) {
+                    MATRIZ_CHASIDE[cat][rubro].forEach(numPregunta => {
+                        if (respuestas[numPregunta] === "SI") {
+                            puntajes[cat][rubro]++;
+                        }
+                    });
+                }
+            }
+
+            const obtenerMayor = (obj) => Object.keys(obj).reduce((a, b) => obj[a] > obj[b] ? a : b);
+            const maxInteres = obtenerMayor(puntajes.intereses);
+            const maxAptitud = obtenerMayor(puntajes.aptitudes);
+
+            const folioGenerado = generarFolio();
+
+            const estudiante = {
+                folioEstudiante: folioGenerado,
+                nombre: document.getElementById("nombre").value.toUpperCase(),
+                escuela: document.getElementById("escuela").value,
+                semestre: document.getElementById("semestre").value,
+                grupo: document.getElementById("grupo").value.toUpperCase(),
+                generacion: document.getElementById("generacion").value,
+                especialidad: document.getElementById("especialidad").value.toUpperCase()
+            };
+
+            // Guardar registro en Supabase
+            try {
+                await supabaseClient.from('respuestas_chaside').insert([{
+                    folio: estudiante.folioEstudiante,
+                    escuela: estudiante.escuela,
+                    semestre: estudiante.semestre,
+                    grupo: estudiante.grupo,
+                    generacion: estudiante.generacion,
+                    especialidad: estudiante.especialidad,
+                    interes_c: puntajes.intereses.C,
+                    interes_h: puntajes.intereses.H,
+                    interes_a: puntajes.intereses.A,
+                    interes_s: puntajes.intereses.S,
+                    interes_i: puntajes.intereses.I,
+                    interes_d: puntajes.intereses.D,
+                    interes_e: puntajes.intereses.E,
+                    aptitud_c: puntajes.aptitudes.C,
+                    aptitud_h: puntajes.aptitudes.H,
+                    aptitud_a: puntajes.aptitudes.A,
+                    aptitud_s: puntajes.aptitudes.S,
+                    aptitud_i: puntajes.aptitudes.I,
+                    aptitud_d: puntajes.aptitudes.D,
+                    aptitud_e: puntajes.aptitudes.E,
+                    top_interes: maxInteres,
+                    top_aptitud: maxAptitud
+                }]);
+            } catch (err) {
+                console.error("Error al guardar en Supabase:", err);
+            }
+
+            // En lugar de descargar el PDF directo, mostramos el resultado en pantalla con su botón
+            mostrarResultadosEnPantalla(estudiante, puntajes, maxInteres, maxAptitud, estudiante.folioEstudiante);
+
+            btn.disabled = false;
+        }
+
+        let datosEstudianteActual = null;
+
+        function mostrarResultadosEnPantalla(estudiante, puntajes, maxInteres, maxAptitud, folioEstudiante) {
+            const interesInfo = DESCRIPCIONES[maxInteres];
+            const aptitudInfo = DESCRIPCIONES[maxAptitud];
+            const folioFinal = folioEstudiante || 'S/F';
+
+            datosEstudianteActual = estudiante;
+
+            const contenedorPrevio = document.getElementById("seccionResultados");
+            if (contenedorPrevio) {
+                contenedorPrevio.remove();
+            }
+
+            const contenedor = document.createElement("div");
+            contenedor.id = "seccionResultados";
+            contenedor.className = "mt-10 pt-8 border-t-2 border-blue-900";
+
+            contenedor.innerHTML = `
+        <!-- Hoja de Constancia Visible en Pantalla -->
+        <div id="hojaImpresionPDF" class="bg-white p-6 md:p-8 rounded-lg border border-slate-300 shadow-sm max-w-3xl mx-auto text-slate-800 font-sans">
+            <div style="text-align: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 20px;">
+              <h2 style="font-size: 15px; font-weight: bold; margin: 0; color: #0f172a;">TEST DE ORIENTACIÓN VOCACIONAL CHASIDE</h2>
+              <h3 style="font-size: 13px; font-weight: bold; margin: 4px 0; color: #334155;">ORIENTACIÓN EDUCATIVA - FORMACIÓN SOCIOEMOCIONAL</h3>
+              <h4 style="font-size: 12px; color: #1e3a8a; margin: 0;">RESULTADOS OBTENIDOS</h4>
+            </div>
+
+            <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 12px;">
+              <p style="margin: 3px 0;"><strong>FOLIO:</strong> ${folioFinal}</p>
+              <p style="margin: 3px 0;"><strong>NOMBRE:</strong> ${estudiante.nombre}</p>
+              <p style="margin: 3px 0;"><strong>ESCUELA:</strong> ${estudiante.escuela}</p>
+              <p style="margin: 3px 0;"><strong>SEMESTRE:</strong> ${estudiante.semestre} &nbsp;|&nbsp; <strong>GRUPO:</strong> "${estudiante.grupo}" &nbsp;|&nbsp; <strong>ESPECIALIDAD:</strong> ${estudiante.especialidad}</p>
+              <p style="margin: 3px 0;"><strong>GENERACIÓN:</strong> ${estudiante.generacion}</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <h3 style="font-size: 13px; color: #1e3a8a; border-bottom: 1px solid #1e3a8a; padding-bottom: 4px; margin-bottom: 8px;">LO QUE MÁS LE INTERESA:</h3>
+              <p style="font-size: 12px; margin: 4px 0;">Obtuvo una puntuación de <strong>${puntajes.intereses[maxInteres]}</strong> de un máximo de 10 en áreas relativas a carreras <strong>${interesInfo.area}</strong>.</p>
+              <p style="font-size: 11px; color: #334155; margin: 4px 0; text-align: justify;">${interesInfo.descripcion}</p>
+              <p style="font-size: 11px; margin: 6px 0;"><strong>Posibles carreras a seguir:</strong> ${interesInfo.carreras}</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <h3 style="font-size: 13px; color: #1e3a8a; border-bottom: 1px solid #1e3a8a; padding-bottom: 4px; margin-bottom: 8px;">TIENE APTITUDES PARA:</h3>
+              <p style="font-size: 12px; margin: 4px 0;">Obtuvo una puntuación de <strong>${puntajes.aptitudes[maxAptitud]}</strong> de un máximo de 4 en áreas relativas a carreras <strong>${aptitudInfo.area}</strong>.</p>
+              <p style="font-size: 11px; color: #334155; margin: 4px 0; text-align: justify;"><strong>Aptitudes que se destacan:</strong> ${aptitudInfo.aptitudes}</p>
+              <p style="font-size: 11px; margin: 6px 0;"><strong>Carreras afines:</strong> ${aptitudInfo.carreras}</p>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+              Documento generado automáticamente- Test de Orientación Vocacional CHASIDE - Dr. William Rivera Reyes.
+            </div>
+        </div>
+
+        <!-- Botón de Impresión/Guardado -->
+        <div class="text-center mt-6">
+            <button onclick="descargarPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-200 text-base inline-flex items-center gap-2">
+                🖨️ Guardar o Imprimir en PDF
+            </button>
+        </div>
+    `;
+
+            const form = document.getElementById("chasideForm");
+            form.appendChild(contenedor);
+            contenedor.scrollIntoView({ behavior: "smooth" });
+        }
+
+        function descargarPDF() {
+            const contenidoHoja = document.getElementById("hojaImpresionPDF").outerHTML;
+
+            // Crear una ventana limpia sin estilos extra de la pagina principal
+            const ventanaImpresion = window.open('', '', 'height=700,width=850');
+
+            ventanaImpresion.document.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Constancia CHASIDE - ${datosEstudianteActual ? datosEstudianteActual.nombre : 'Estudiante'}</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #ffffff;
+                    margin: 0;
+                    padding: 20px;
+                    color: #1e293b;
+                }
+                #hojaImpresionPDF {
+                    width: 100% !important;
+                    max-width: 750px !important;
+                    margin: 0 auto !important;
+                    padding: 0 !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                }
+                @page {
+                    size: letter portrait;
+                    margin: 12mm;
+                }
+            </style>
+        </head>
+        <body>
+            ${contenidoHoja}
+        </body>
+        </html>
+    `);
+
+            ventanaImpresion.document.close();
+            ventanaImpresion.focus();
+
+            // Ejecutar impresión tras cargar el DOM de la ventana emergente
+            setTimeout(() => {
+                ventanaImpresion.print();
+                ventanaImpresion.close();
+            }, 250);
+        }
+    </script>
+
+    <footer class="mt-12 border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500 shadow-inner">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-2">
+            <div>
+                <p class="font-semibold text-slate-700">Centro de Bachillerato Tecnológico Industrial y de Servicios No.
+                    142</p>
+                <p>Orientación Educativa &bull; Recursos Socioemocionales</p>
+            </div>
+            <div class="text-slate-600 font-medium">
+                Desarrollado por <span class="text-blue-800 font-bold">Dr. William Rivera Reyes</span>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
